@@ -1,0 +1,19 @@
+name: genetic-algorithm
+channels:
+  - defaults
+dependencies:
+  - imageio=2.4
+  - joblib=0.13
+  - mkl>=2018,<2019
+  - pip>=9.0.1,<=19
+  - python=3.6.6
+  - scikit-image=0.14
+  - scipy=1
+  - pip:
+      - arrow==0.12.1
+      - colorama==0.3.9
+      - colour-science==0.3.11
+      - numpy>=1.14.1,<=1.16
+      - Pillow>=5.1.0,<=5.4.0
+      - six
+      - tqdm==4.23.4
