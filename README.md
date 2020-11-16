@@ -1,7 +1,7 @@
-# genetic-algorithm
+# pokemon-image-generator
 Image evolution using genetic algorithm
 
-
+Use a genetic algorithm to create an image using pokemon emojies.
 
 
 | Target image | RGB MSE fitness | LAB MSE fitness |
