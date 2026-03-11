@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 from skimage.color import rgb2lab
-from skimage.measure import compare_ssim
+from skimage.metrics import structural_similarity
 
 
 def calculate_mse(image_a, image_b):
@@ -46,10 +46,10 @@ class SSIMFitness():
 
     def evaluate_fitness(self, individuals):
         for individual in individuals:
-            fitness_value = compare_ssim(
+            fitness_value = structural_similarity(
                 self.target_image_np,
                 self.preprocess_pil_image(individual.phenotype),
-                multichannel=True,
+                channel_axis=-1,
             )
             individual.set_fitness(fitness_value)
 
