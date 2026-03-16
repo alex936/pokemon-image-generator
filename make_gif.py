@@ -3,7 +3,6 @@ from pathlib import Path
 
 import imageio
 
-
 def get_file_paths(image_root_path, file_extensions=("png",)):
     image_file_paths = []
 

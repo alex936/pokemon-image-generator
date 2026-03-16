@@ -2,7 +2,6 @@ import random
 
 from PIL import Image
 
-
 class Individual:
     pokemons = None
     target_image = None

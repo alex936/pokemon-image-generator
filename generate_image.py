@@ -19,6 +19,7 @@ HEIGHT = 300
 WIDTH = 300
 POKEMON_SIZE = 15
 
+
 if __name__ == "__main__":
 
     arg_parser = argparse.ArgumentParser()
@@ -80,7 +81,7 @@ if __name__ == "__main__":
                     "best_ind_iter_{}.png".format(i),
                 )
             )
-
+            
         new_population = []
         new_population.extend(parents)
 

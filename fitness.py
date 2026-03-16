@@ -3,7 +3,6 @@ from PIL import Image
 from skimage.color import rgb2lab
 from skimage.metrics import structural_similarity
 
-
 def calculate_mse(image_a, image_b):
     err = np.sum((image_a - image_b) ** 2)
     return err

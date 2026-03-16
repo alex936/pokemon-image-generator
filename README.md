@@ -10,6 +10,7 @@ Use a genetic algorithm to create an image using pokemon emojies.
 # Setup
 * `conda env create`
 
+
 # Usage
 * `python generate_image.py `
 
