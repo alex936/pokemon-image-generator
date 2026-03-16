@@ -7,7 +7,7 @@ dependencies:
   - mkl>=2018,<2019
   - pip>=9.0.1,<=19
   - python=3.6.6
-  - scikit-image=0.14
+  - scikit-image=0.15
   - scipy=1
   - pip:
       - arrow==0.12.1
