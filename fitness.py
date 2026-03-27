@@ -128,8 +128,50 @@ class LABMSEFitness():
             individual.set_fitness(fitness_value)
 
 
+class LABSSIMFitness():
+    """Fitness evaluator using SSIM in the perceptual LAB color space."""
+
+    DOWNSCALED_SIZE = (100, 100)
+
+    def __init__(self, target_image_pil):
+        """
+
+        :param target_image_pil: Target image as a PIL Image in RGB mode
+        """
+        self.target_image_np_lab = self.preprocess_pil_image(target_image_pil)
+
+    @staticmethod
+    def preprocess_pil_image(pil_image):
+        """Downscale a PIL image and convert it to a LAB color space numpy array.
+
+        :param pil_image: Input PIL Image
+        """
+        return rgb2lab(
+            np.array(
+                pil_image.resize(
+                    LABSSIMFitness.DOWNSCALED_SIZE, resample=Image.BILINEAR
+                )
+            )
+        )
+
+    def get_fitness(self, individuals):
+        """Assign fitness scores to individuals based on SSIM in LAB color space against the target image.
+
+        :param individuals: List of Individual objects to evaluate
+        """
+        for individual in individuals:
+            fitness_value = structural_similarity(
+                self.target_image_np_lab,
+                self.preprocess_pil_image(individual.genotype),
+                channel_axis=-1,
+                data_range=self.target_image_np_lab.max() - self.target_image_np_lab.min(),
+            )
+            individual.set_fitness(fitness_value)
+
+
 FITNESS = {
     "RGBMSE": RGBMSEFitness,
     "SSIM": SSIMFitness,
-    "LABMSEFitness": LABMSEFitness
+    "LABMSEFitness": LABMSEFitness,
+    "LABSSIMFitness": LABSSIMFitness,
 }
