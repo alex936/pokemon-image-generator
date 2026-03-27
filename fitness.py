@@ -1,6 +1,9 @@
 import numpy as np
+import torch
+import torchvision.models as models
+import torchvision.transforms as transforms
 from PIL import Image
-from skimage.color import rgb2lab
+from skimage.color import deltaE_ciede2000, rgb2lab
 from skimage.metrics import structural_similarity
 
 def calculate_mse(image_a, image_b):
@@ -169,9 +172,89 @@ class LABSSIMFitness():
             individual.set_fitness(fitness_value)
 
 
+class CIEDE2000Fitness():
+    """Fitness evaluator using the CIEDE2000 perceptual color difference metric."""
+
+    DOWNSCALED_SIZE = (100, 100)
+
+    def __init__(self, target_image_pil):
+        """
+
+        :param target_image_pil: Target image as a PIL Image in RGB mode
+        """
+        self.target_image_np_lab = self.preprocess_pil_image(target_image_pil)
+
+    @staticmethod
+    def preprocess_pil_image(pil_image):
+        """Downscale a PIL image and convert it to a LAB color space numpy array.
+
+        :param pil_image: Input PIL Image
+        """
+        return rgb2lab(
+            np.array(
+                pil_image.resize(
+                    CIEDE2000Fitness.DOWNSCALED_SIZE, resample=Image.BILINEAR
+                )
+            )
+        )
+
+    def get_fitness(self, individuals):
+        """Assign fitness scores based on mean CIEDE2000 color difference against the target.
+
+        :param individuals: List of Individual objects to evaluate
+        """
+        for individual in individuals:
+            delta = deltaE_ciede2000(
+                self.target_image_np_lab,
+                self.preprocess_pil_image(individual.genotype),
+            )
+            fitness_value = 1 / (1 + delta.mean())
+            individual.set_fitness(fitness_value)
+
+
+class VGGPerceptualFitness():
+    """Fitness evaluator using perceptual feature maps from a pretrained VGG16 network."""
+
+    DOWNSCALED_SIZE = (224, 224)
+
+    _transform = transforms.Compose([
+        transforms.Resize(DOWNSCALED_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    def __init__(self, target_image_pil):
+        """
+
+        :param target_image_pil: Target image as a PIL Image in RGB mode
+        """
+        vgg = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
+        self.feature_extractor = torch.nn.Sequential(*list(vgg.features.children())[:18])
+        self.feature_extractor.eval()
+
+        with torch.no_grad():
+            self.target_features = self.feature_extractor(
+                self._transform(target_image_pil).unsqueeze(0)
+            )
+
+    def get_fitness(self, individuals):
+        """Assign fitness scores based on VGG feature map similarity against the target.
+
+        :param individuals: List of Individual objects to evaluate
+        """
+        for individual in individuals:
+            img_tensor = self._transform(individual.genotype).unsqueeze(0)
+            with torch.no_grad():
+                features = self.feature_extractor(img_tensor)
+            mse = torch.mean((self.target_features - features) ** 2).item()
+            individual.set_fitness(1 / (1 + mse))
+
+
 FITNESS = {
     "RGBMSE": RGBMSEFitness,
     "SSIM": SSIMFitness,
     "LABMSEFitness": LABMSEFitness,
     "LABSSIMFitness": LABSSIMFitness,
+    "CIEDE2000Fitness": CIEDE2000Fitness,
+    "VGGPerceptualFitness": VGGPerceptualFitness,
 }
