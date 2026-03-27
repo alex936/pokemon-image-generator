@@ -42,6 +42,8 @@ class RGBMSEFitness():
         :param individuals: List of Individual objects to evaluate
         """
         for individual in individuals:
+            if not individual.dirty:
+                continue
             fitness_value = 1 / (
                     1
                     + calculate_mse(
@@ -81,6 +83,8 @@ class SSIMFitness():
         :param individuals: List of Individual objects to evaluate
         """
         for individual in individuals:
+            if not individual.dirty:
+                continue
             fitness_value = structural_similarity(
                 self.target_image_np,
                 self.preprocess_pil_image(individual.phenotype),
@@ -93,6 +97,7 @@ class LABMSEFitness():
     """Fitness evaluator using mean squared error in the perceptual LAB color space."""
 
     DOWNSCALED_SIZE = (100, 100)
+    CACHE_KEY = "lab"
 
     def __init__(self, target_image_pil):
         """
@@ -121,13 +126,11 @@ class LABMSEFitness():
         :param individuals: List of Individual objects to evaluate
         """
         for individual in individuals:
-            fitness_value = 1 / (
-                    1
-                    + calculate_mse(
-                self.target_image_np_lab,
-                self.preprocess_pil_image(individual.genotype),
-            )
-            )
+            if not individual.dirty:
+                continue
+            if self.CACHE_KEY not in individual._cache:
+                individual._cache[self.CACHE_KEY] = self.preprocess_pil_image(individual.genotype)
+            fitness_value = 1 / (1 + calculate_mse(self.target_image_np_lab, individual._cache[self.CACHE_KEY]))
             individual.set_fitness(fitness_value)
 
 
@@ -135,6 +138,7 @@ class LABSSIMFitness():
     """Fitness evaluator using SSIM in the perceptual LAB color space."""
 
     DOWNSCALED_SIZE = (100, 100)
+    CACHE_KEY = "lab"
 
     def __init__(self, target_image_pil):
         """
@@ -163,9 +167,13 @@ class LABSSIMFitness():
         :param individuals: List of Individual objects to evaluate
         """
         for individual in individuals:
+            if not individual.dirty:
+                continue
+            if self.CACHE_KEY not in individual._cache:
+                individual._cache[self.CACHE_KEY] = self.preprocess_pil_image(individual.genotype)
             fitness_value = structural_similarity(
                 self.target_image_np_lab,
-                self.preprocess_pil_image(individual.genotype),
+                individual._cache[self.CACHE_KEY],
                 channel_axis=-1,
                 data_range=self.target_image_np_lab.max() - self.target_image_np_lab.min(),
             )
@@ -176,6 +184,7 @@ class CIEDE2000Fitness():
     """Fitness evaluator using the CIEDE2000 perceptual color difference metric."""
 
     DOWNSCALED_SIZE = (100, 100)
+    CACHE_KEY = "lab"
 
     def __init__(self, target_image_pil):
         """
@@ -204,12 +213,12 @@ class CIEDE2000Fitness():
         :param individuals: List of Individual objects to evaluate
         """
         for individual in individuals:
-            delta = deltaE_ciede2000(
-                self.target_image_np_lab,
-                self.preprocess_pil_image(individual.genotype),
-            )
-            fitness_value = 1 / (1 + delta.mean())
-            individual.set_fitness(fitness_value)
+            if not individual.dirty:
+                continue
+            if self.CACHE_KEY not in individual._cache:
+                individual._cache[self.CACHE_KEY] = self.preprocess_pil_image(individual.genotype)
+            delta = deltaE_ciede2000(self.target_image_np_lab, individual._cache[self.CACHE_KEY])
+            individual.set_fitness(1 / (1 + delta.mean()))
 
 
 class VGGPerceptualFitness():
@@ -242,12 +251,19 @@ class VGGPerceptualFitness():
 
         :param individuals: List of Individual objects to evaluate
         """
-        for individual in individuals:
-            img_tensor = self._transform(individual.genotype).unsqueeze(0)
-            with torch.no_grad():
-                features = self.feature_extractor(img_tensor)
-            mse = torch.mean((self.target_features - features) ** 2).item()
-            individual.set_fitness(1 / (1 + mse))
+        dirty = [ind for ind in individuals if ind.dirty]
+        if not dirty:
+            return
+
+        batch = torch.stack([self._transform(ind.genotype) for ind in dirty])
+        with torch.no_grad():
+            features = self.feature_extractor(batch)
+
+        target = self.target_features.expand(len(dirty), -1, -1, -1)
+        mse_values = torch.mean((target - features) ** 2, dim=[1, 2, 3])
+
+        for ind, mse in zip(dirty, mse_values):
+            ind.set_fitness(1 / (1 + mse.item()))
 
 
 FITNESS = {

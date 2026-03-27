@@ -16,6 +16,8 @@ class Individual:
         """
         self.genotype = genotype
         self.fitness = fitness
+        self.dirty = True
+        self._cache = {}
 
     def apply_mutation(self):
         """Mutate the individual by pasting a random Pokemon at a random position."""
@@ -23,6 +25,8 @@ class Individual:
         x = random.randint(0, Individual.target_image.width)
         y = random.randint(0, Individual.target_image.height)
         self.genotype.paste(pokemon, box=(x, y), mask=pokemon)
+        self.dirty = True
+        self._cache = {}
 
     def apply_crossover(self, other_individual):
         """Apply crossover by copying the top-left region from another individual.
@@ -33,13 +37,16 @@ class Individual:
         box_top = (0, 0, int(self.genotype.size[0] / 2), height_cutoff)
         other_individual_cropped = other_individual.genotype.crop(box_top)
         self.genotype.paste(other_individual_cropped, box_top)
+        self.dirty = True
+        self._cache = {}
 
     def set_fitness(self, fitness):
-        """Set the fitness score for this individual.
+        """Set the fitness score for this individual and mark it as clean.
 
         :param fitness: Fitness score as a float
         """
         self.fitness = fitness
+        self.dirty = False
 
     @staticmethod
     def get_random_individual():
@@ -48,5 +55,8 @@ class Individual:
         return Individual(genotype=image)
 
     def copy(self):
-        """Return a deep copy of this individual."""
-        return Individual(genotype=self.genotype.copy(), fitness=self.fitness)
+        """Return a deep copy of this individual, preserving fitness and cache."""
+        ind = Individual(genotype=self.genotype.copy(), fitness=self.fitness)
+        ind.dirty = self.dirty
+        ind._cache = dict(self._cache)
+        return ind
