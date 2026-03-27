@@ -3,19 +3,17 @@ import random
 from PIL import Image
 
 class Individual:
-    """Represents a single candidate solution in the genetic algorithm.
-
-    Each individual holds a genotype (a PIL image composed of Pokemon tiles)
-    and a fitness score reflecting how closely it matches the target image.
-    Class-level attributes are shared across all instances and set before the
-    algorithm runs.
-    """
+    """Represents a single candidate solution in the genetic algorithm."""
 
     pokemons = None
     target_image = None
 
     def __init__(self, genotype, fitness=None):
-        """Initialize an individual with a genotype image and optional fitness score."""
+        """
+
+        :param genotype: PIL Image representing the individual's composition of Pokemon tiles
+        :param fitness: Fitness score indicating similarity to the target image
+        """
         self.genotype = genotype
         self.fitness = fitness
 
@@ -27,14 +25,20 @@ class Individual:
         self.genotype.paste(pokemon, box=(x, y), mask=pokemon)
 
     def apply_crossover(self, other_individual):
-        """Apply crossover by copying the top-left region from another individual."""
+        """Apply crossover by copying the top-left region from another individual.
+
+        :param other_individual: The other Individual to copy a region from
+        """
         height_cutoff = random.randint(1, Individual.target_image.size[1])
         box_top = (0, 0, int(self.genotype.size[0] / 2), height_cutoff)
         other_individual_cropped = other_individual.genotype.crop(box_top)
         self.genotype.paste(other_individual_cropped, box_top)
 
     def set_fitness(self, fitness):
-        """Set the fitness score for this individual."""
+        """Set the fitness score for this individual.
+
+        :param fitness: Fitness score as a float
+        """
         self.fitness = fitness
 
     @staticmethod
