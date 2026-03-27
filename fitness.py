@@ -4,21 +4,25 @@ from skimage.color import rgb2lab
 from skimage.metrics import structural_similarity
 
 def calculate_mse(image_a, image_b):
+    """Calculate the mean squared error between two images represented as numpy arrays."""
     err = np.sum((image_a - image_b) ** 2)
     return err
 
 
 def calculate_mae(image_a, image_b):
+    """Calculate the mean absolute error between two images represented as numpy arrays."""
     err = np.sum(np.abs(image_a - image_b))
     return err
 
 
 class RGBMSEFitness():
+    """Fitness evaluator using mean squared error in RGB color space."""
 
     def __init__(self, target_image_pil):
         self.target_image_np = np.array(target_image_pil)
 
     def get_fitness(self, individuals):
+        """Assign fitness scores to individuals based on RGB MSE against the target image."""
         for individual in individuals:
             fitness_value = 1 / (
                     1
@@ -30,6 +34,8 @@ class RGBMSEFitness():
 
 
 class SSIMFitness():
+    """Fitness evaluator using the Structural Similarity Index (SSIM)."""
+
     DOWNSCALED_SIZE = (100, 100)
 
     def __init__(self, target_image_pil):
@@ -37,6 +43,7 @@ class SSIMFitness():
 
     @staticmethod
     def preprocess_pil_image(pil_image):
+        """Downscale a PIL image and convert it to a numpy array."""
         return np.array(
             pil_image.resize(
                 SSIMFitness.DOWNSCALED_SIZE, resample=Image.BILINEAR
@@ -44,6 +51,7 @@ class SSIMFitness():
         )
 
     def evaluate_fitness(self, individuals):
+        """Assign fitness scores to individuals based on SSIM against the target image."""
         for individual in individuals:
             fitness_value = structural_similarity(
                 self.target_image_np,
@@ -54,6 +62,8 @@ class SSIMFitness():
 
 
 class LABMSEFitness():
+    """Fitness evaluator using mean squared error in the perceptual LAB color space."""
+
     DOWNSCALED_SIZE = (100, 100)
 
     def __init__(self, target_image_pil):
@@ -61,6 +71,7 @@ class LABMSEFitness():
 
     @staticmethod
     def preprocess_pil_image(pil_image):
+        """Downscale a PIL image and convert it to a LAB color space numpy array."""
         return rgb2lab(
             np.array(
                 pil_image.resize(
@@ -70,6 +81,7 @@ class LABMSEFitness():
         )
 
     def get_fitness(self, individuals):
+        """Assign fitness scores to individuals based on LAB MSE against the target image."""
         for individual in individuals:
             fitness_value = 1 / (
                     1
