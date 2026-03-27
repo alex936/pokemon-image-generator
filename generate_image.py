@@ -20,6 +20,10 @@ WIDTH = 300
 POKEMON_SIZE = 15
 
 
+def hello_world():
+    print("Hello, World!")
+
+
 if __name__ == "__main__":
 
     arg_parser = argparse.ArgumentParser()
