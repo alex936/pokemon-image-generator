@@ -224,7 +224,7 @@ class CIEDE2000Fitness():
 class VGGPerceptualFitness():
     """Fitness evaluator using perceptual feature maps from a pretrained VGG16 network."""
 
-    DOWNSCALED_SIZE = (224, 224)
+    DOWNSCALED_SIZE = (64, 64)
 
     _transform = transforms.Compose([
         transforms.Resize(DOWNSCALED_SIZE),
@@ -266,6 +266,51 @@ class VGGPerceptualFitness():
             ind.set_fitness(1 / (1 + mse.item()))
 
 
+class MobileNetPerceptualFitness():
+    """Fitness evaluator using perceptual feature maps from a pretrained MobileNetV3 network."""
+
+    DOWNSCALED_SIZE = (224, 224)
+
+    _transform = transforms.Compose([
+        transforms.Resize(DOWNSCALED_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    def __init__(self, target_image_pil):
+        """
+
+        :param target_image_pil: Target image as a PIL Image in RGB mode
+        """
+        mobilenet = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)
+        self.feature_extractor = mobilenet.features
+        self.feature_extractor.eval()
+
+        with torch.no_grad():
+            self.target_features = self.feature_extractor(
+                self._transform(target_image_pil).unsqueeze(0)
+            )
+
+    def get_fitness(self, individuals):
+        """Assign fitness scores based on MobileNet feature map similarity against the target.
+
+        :param individuals: List of Individual objects to evaluate
+        """
+        dirty = [ind for ind in individuals if ind.dirty]
+        if not dirty:
+            return
+
+        batch = torch.stack([self._transform(ind.genotype) for ind in dirty])
+        with torch.no_grad():
+            features = self.feature_extractor(batch)
+
+        target = self.target_features.expand(len(dirty), -1, -1, -1)
+        mse_values = torch.mean((target - features) ** 2, dim=[1, 2, 3])
+
+        for ind, mse in zip(dirty, mse_values):
+            ind.set_fitness(1 / (1 + mse.item()))
+
+
 FITNESS = {
     "RGBMSE": RGBMSEFitness,
     "SSIM": SSIMFitness,
@@ -273,4 +318,5 @@ FITNESS = {
     "LABSSIMFitness": LABSSIMFitness,
     "CIEDE2000Fitness": CIEDE2000Fitness,
     "VGGPerceptualFitness": VGGPerceptualFitness,
+    "MobileNetPerceptualFitness": MobileNetPerceptualFitness,
 }
