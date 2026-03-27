@@ -21,6 +21,7 @@ POKEMON_SIZE = 15
 
 
 def hello_world():
+    """Print a hello world message."""
     print("Hello, World!")
 
 
