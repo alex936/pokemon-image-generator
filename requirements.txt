@@ -13,5 +13,7 @@ scikit-image==0.26.0
 scipy==1.17.1
 six==1.17.0
 tifffile==2026.3.3
+torch==2.11.0
+torchvision==0.26.0
 tqdm==4.67.3
 tzdata==2025.3

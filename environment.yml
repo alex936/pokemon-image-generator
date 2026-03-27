@@ -16,4 +16,6 @@ dependencies:
       - numpy>=1.14.1,<=1.16
       - Pillow>=5.1.0,<=5.4.0
       - six
+      - torch==2.11.0
+      - torchvision==0.26.0
       - tqdm==4.23.4
